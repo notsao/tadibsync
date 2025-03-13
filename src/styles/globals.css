@@ -1,0 +1,139 @@
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 4.9%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 240 10% 4.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 252 87% 67%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 240 5% 12%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 240 5% 12%;
+    --muted-foreground: 240 5% 64.9%;
+    
+    --accent: 252 87% 67%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5% 12%;
+    --input: 240 5% 12%;
+    --ring: 252 87% 67%;
+    
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background: linear-gradient(to bottom, hsl(240 10% 3.9%), hsl(240 10% 2%));
+    min-height: 100vh;
+  }
+}
+
+/* Enhanced gradients */
+.gradient-bg {
+  background: linear-gradient(135deg, hsl(252, 87%, 67%), hsl(224, 88%, 50%));
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(252, 87%, 67%), hsl(224, 88%, 50%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Interactive elements */
+button, [role="button"], a {
+  cursor: pointer !important;
+}
+
+.recharts-wrapper {
+  cursor: default;
+}
+
+.recharts-layer {
+  cursor: pointer;
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+}
+
+.task-card-hover {
+  transition: all 0.3s ease;
+}
+
+.task-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Table styles */
+.interactive-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.interactive-table th,
+.interactive-table td {
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.interactive-table th {
+  background: rgba(255, 255, 255, 0.02);
+  font-weight: 500;
+}
+
+.interactive-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+/* Enhanced chart interactions */
+.recharts-default-tooltip {
+  background-color: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+.recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.1) !important;
+}
+
+.recharts-cartesian-axis-line {
+  stroke: rgba(255, 255, 255, 0.2) !important;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: hsl(var(--foreground)) !important;
+}
+
+.recharts-text {
+  fill: hsl(var(--foreground)) !important;
+}
+
+.recharts-legend-item-text {
+  color: hsl(var(--foreground)) !important;
+} 

@@ -5,34 +5,37 @@ import { Input } from '@/components_/ui/input';
 import { Textarea } from '@/components_/ui/textarea';
 import { Button } from '@/components_/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components_/ui/select';
-import { loadCategories, calculateTaskPoints } from '@/utils/storage';
+import { loadCategories, calculateTaskPoints } from '@/utils/storage'; // Ensure this import is correct
 
-const TaskForm = ({ isOpen, onClose, onSubmit, task }) => {
+const TaskForm = ({ isOpen, onClose, onSubmit, task, userId }) => {
   const [title, setTitle] = useState(task ? task.title : '');
   const [description, setDescription] = useState(task ? task.description : '');
-  const [category, setCategory] = useState(task ? task.category : '');
+  const [categoryId, setCategoryId] = useState(task ? task.categoryId : '');
   const [priority, setPriority] = useState(task ? task.priority : 'low');
   const [dueDate, setDueDate] = useState(task ? task.dueDate : '');
   const [categories, setCategories] = useState([]);
   const [calculatedPoints, setCalculatedPoints] = useState(0);
 
+  // Load categories for the user
   useEffect(() => {
-    setCategories(loadCategories());
-  }, []);
+    const userCategories = loadCategories(userId);
+    setCategories(userCategories);
+  }, [userId]);
 
+  // Calculate points when category or priority changes
   useEffect(() => {
-    if (category && priority) {
-      const points = calculateTaskPoints({ category, priority });
+    if (categoryId && priority) {
+      const points = calculateTaskPoints({ categoryId, priority, userId });
       setCalculatedPoints(points);
     }
-  }, [category, priority]);
+  }, [categoryId, priority, userId]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const newTask = {
       title,
       description,
-      category,
+      categoryId,
       priority,
       points: calculatedPoints,
       dueDate,
@@ -81,15 +84,15 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task }) => {
             <div className="form-group">
               <Label htmlFor="category">Category</Label>
               <Select
-                value={category}
-                onValueChange={setCategory}
+                value={categoryId}
+                onValueChange={setCategoryId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.name} value={cat.name}>
+                    <SelectItem key={cat.id} value={cat.id}>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"
@@ -153,4 +156,4 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task }) => {
   );
 };
 
-export default TaskForm; 
+export default TaskForm;

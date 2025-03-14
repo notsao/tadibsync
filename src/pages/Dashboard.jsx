@@ -33,16 +33,16 @@ import TaskList from "@/components/tasks/TaskList";
 import {
   loadTasks,
   saveTasks,
+  loadCategories,
+  addPointsToHistory,
   calculateStreak,
   getMonthlyStats,
-  addPointsToHistory,
-  loadCategories,
 } from "@/utils/storage";
 import { getPriorityColor } from "@/utils/styles";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-export default function Dashboard() {
+export default function Dashboard({ userId }) {
   const [tasks, setTasks] = useState([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -50,52 +50,57 @@ export default function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState({ totalPoints: 0, totalTasks: 0 });
 
+  // Load data for the user
   useEffect(() => {
     const loadData = () => {
-      setTasks(loadTasks());
-      setCategories(loadCategories());
-      setStreak(calculateStreak());
-      setMonthlyStats(getMonthlyStats());
+      setTasks(loadTasks(userId));
+      setCategories(loadCategories(userId));
+      setStreak(calculateStreak(userId));
+      setMonthlyStats(getMonthlyStats(userId));
     };
 
     loadData();
-  }, []);
+  }, [userId]);
 
-  // Add a new effect to reload categories when the component is focused
+  // Reload categories when the component is focused
   useEffect(() => {
     const handleFocus = () => {
-      setCategories(loadCategories());
+      setCategories(loadCategories(userId));
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  }, [userId]);
 
+  // Add a new task
   const addTask = (newTask) => {
     const taskId = Math.max(...tasks.map(t => t.id || 0), 0) + 1;
     const taskWithId = { ...newTask, id: taskId, status: "in-progress" };
     const updatedTasks = [...tasks, taskWithId];
     setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    saveTasks(userId, updatedTasks);
     setIsAddingTask(false);
     setEditingTask(null);
   };
 
+  // Edit a task
   const editTask = (task) => {
     setEditingTask(task);
     setIsAddingTask(true);
   };
 
+  // Update a task
   const updateTask = (updatedTask) => {
     const updatedTasks = tasks.map(task =>
       task.id === updatedTask.id ? updatedTask : task
     );
     setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    saveTasks(userId, updatedTasks);
     setIsAddingTask(false);
     setEditingTask(null);
   };
 
+  // Complete a task
   const completeTask = (taskId) => {
     const updatedTasks = tasks.map(task =>
       task.id === taskId
@@ -103,26 +108,27 @@ export default function Dashboard() {
         : task
     );
     setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    saveTasks(userId, updatedTasks);
 
     const completedTask = updatedTasks.find(t => t.id === taskId);
     if (completedTask) {
-      addPointsToHistory(completedTask.points, completedTask.category);
-      setStreak(calculateStreak());
-      setMonthlyStats(getMonthlyStats());
+      addPointsToHistory(userId, completedTask.points, completedTask.categoryId);
+      setStreak(calculateStreak(userId));
+      setMonthlyStats(getMonthlyStats(userId));
     }
   };
 
+  // Delete a task
   const deleteTask = (taskId) => {
     const updatedTasks = tasks.filter(task => task.id !== taskId);
     setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    saveTasks(userId, updatedTasks);
   };
 
   // Calculate category distribution for the pie chart
   const categoryData = categories.map(category => {
     const categoryTasks = tasks.filter(
-      task => task.status === "completed" && task.category === category.name
+      task => task.status === "completed" && task.categoryId === category.id
     );
     return {
       name: category.name,
@@ -319,7 +325,7 @@ export default function Dashboard() {
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {upcomingTasks.map(task => {
-            const category = categories.find(c => c.name === task.category);
+            const category = categories.find(c => c.id === task.categoryId);
             return (
               <Card key={task.id} className="p-4 enhanced-card">
                 <div className="flex flex-col gap-2">
@@ -377,4 +383,4 @@ export default function Dashboard() {
       </Card>
     </div>
   );
-} 
+}

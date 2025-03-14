@@ -1,135 +1,109 @@
-const STORAGE_KEYS = {
-  TASKS: 'tadibsync_tasks',
-  CATEGORIES: 'tadibsync_categories',
-  POINTS_HISTORY: 'tadibsync_points_history'
-};
+const fs = require('fs');
+const path = require('path');
 
-const defaultCategories = [
-  { 
-    id: 1, 
-    name: 'Health', 
-    basePoints: 20, 
-    color: '#22c55e',
-    icon: 'Heart'
-  },
-  { 
-    id: 2, 
-    name: 'Work', 
-    basePoints: 18, 
-    color: '#6366f1',
-    icon: 'Briefcase'
-  },
-  { 
-    id: 3, 
-    name: 'Learning', 
-    basePoints: 15, 
-    color: '#3b82f6',
-    icon: 'GraduationCap'
-  },
-  { 
-    id: 4, 
-    name: 'Fitness', 
-    basePoints: 15, 
-    color: '#ec4899',
-    icon: 'Dumbbell'
-  },
-  { 
-    id: 5, 
-    name: 'Personal', 
-    basePoints: 12, 
-    color: '#f59e0b',
-    icon: 'Brain'
-  },
-  { 
-    id: 6, 
-    name: 'Social', 
-    basePoints: 10, 
-    color: '#8b5cf6',
-    icon: 'Users'
-  },
-  { 
-    id: 7, 
-    name: 'Hobbies', 
-    basePoints: 8, 
-    color: '#06b6d4',
-    icon: 'Palette'
+// Define paths for JSON files
+const BASE_CATEGORIES_PATH = path.join(__dirname, 'base_categories.json');
+const USERS_PATH = path.join(__dirname, 'users.json');
+
+// Helper function to load JSON data
+const loadJsonData = (filePath) => {
+  if (!fs.existsSync(filePath)) {
+    return null;
   }
-];
+  const data = fs.readFileSync(filePath, 'utf-8');
+  return JSON.parse(data);
+};
 
-export function loadTasks() {
-  const tasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-  return tasks ? JSON.parse(tasks) : [];
-}
+// Helper function to save JSON data
+const saveJsonData = (filePath, data) => {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+};
 
-export function saveTasks(tasks) {
-  localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-}
+// Load base categories
+const loadBaseCategories = () => {
+  return loadJsonData(BASE_CATEGORIES_PATH) || [];
+};
 
-export const loadCategories = () => {
-  const categories = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-  if (!categories) {
-    // Initialize with default categories if none exist
-    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(defaultCategories));
-    return defaultCategories;
+// Load all users
+const loadUsers = () => {
+  return loadJsonData(USERS_PATH) || [];
+};
+
+// Save all users
+const saveUsers = (users) => {
+  saveJsonData(USERS_PATH, users);
+};
+
+// Find a user by userId
+const findUser = (userId) => {
+  const users = loadUsers();
+  return users.find(user => user.userId === userId);
+};
+
+// Save a user's data
+const saveUser = (user) => {
+  const users = loadUsers();
+  const userIndex = users.findIndex(u => u.userId === user.userId);
+  if (userIndex !== -1) {
+    users[userIndex] = user; // Update existing user
+  } else {
+    users.push(user); // Add new user
   }
-  
-  const savedCategories = JSON.parse(categories);
-  
-  // Ensure all required fields are present and up to date
-  const updatedCategories = savedCategories.map(category => ({
-    id: category.id,
-    name: category.name,
-    basePoints: category.basePoints || defaultCategories.find(c => c.name === category.name)?.basePoints || 1,
-    color: category.color || defaultCategories.find(c => c.name === category.name)?.color || '#94a3b8',
-    icon: category.icon || defaultCategories.find(c => c.name === category.name)?.icon || 'Tag'
-  }));
-
-  // Save the updated categories back to storage
-  localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updatedCategories));
-  return updatedCategories;
+  saveUsers(users);
 };
 
-export const saveCategories = (categories) => {
-  // Ensure each category has all required fields and a unique ID
-  const categoriesWithIds = categories.map((cat, index) => ({
-    id: cat.id || index + 1,
-    name: cat.name,
-    basePoints: cat.basePoints || 1,
-    color: cat.color || '#94a3b8',
-    icon: cat.icon || 'Tag'
-  }));
-
-  localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categoriesWithIds));
-  
-  // After saving categories, update any existing tasks with the new category information
-  const tasks = loadTasks();
-  const updatedTasks = tasks.map(task => {
-    const category = categoriesWithIds.find(c => c.id === task.categoryId);
-    if (category) {
-      return {
-        ...task,
-        points: calculateTaskPoints({ ...task, categoryId: category.id })
-      };
-    }
-    return task;
-  });
-  
-  saveTasks(updatedTasks);
+// Load tasks for a user
+const loadTasks = (userId) => {
+  const user = findUser(userId);
+  return user ? user.tasks || [] : [];
 };
 
-export function loadPointsHistory() {
-  const history = localStorage.getItem(STORAGE_KEYS.POINTS_HISTORY);
-  return history ? JSON.parse(history) : [];
-}
+// Save tasks for a user
+const saveTasks = (userId, tasks) => {
+  const user = findUser(userId);
+  if (user) {
+    user.tasks = tasks;
+    saveUser(user);
+  }
+};
 
-export function savePointsHistory(history) {
-  localStorage.setItem(STORAGE_KEYS.POINTS_HISTORY, JSON.stringify(history));
-}
+// Load categories for a user (base + custom)
+const loadCategories = (userId) => {
+  const baseCategories = loadBaseCategories();
+  const user = findUser(userId);
+  const customCategories = user ? user.categories || [] : [];
+  return [...baseCategories, ...customCategories];
+};
 
-export function addPointsToHistory(points, category) {
-  const history = loadPointsHistory();
+// Save custom categories for a user
+const saveCategories = (userId, categories) => {
+  const user = findUser(userId);
+  if (user) {
+    user.categories = categories;
+    saveUser(user);
+  }
+};
+
+// Load points history for a user
+const loadPointsHistory = (userId) => {
+  const user = findUser(userId);
+  return user ? user.pointsHistory || [] : [];
+};
+
+// Save points history for a user
+const savePointsHistory = (userId, history) => {
+  const user = findUser(userId);
+  if (user) {
+    user.pointsHistory = history;
+    saveUser(user);
+  }
+};
+
+// Add points to a user's history
+const addPointsToHistory = (userId, points, categoryId) => {
+  const history = loadPointsHistory(userId);
   const today = new Date().toISOString().split('T')[0];
-  
+
   const todayEntry = history.find(entry => entry.date === today);
   if (todayEntry) {
     todayEntry.points += points;
@@ -137,41 +111,47 @@ export function addPointsToHistory(points, category) {
   } else {
     history.push({ date: today, points, tasks: 1 });
   }
-  
+
+  // Keep only the last 30 days of history
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const filteredHistory = history.filter(entry => 
     new Date(entry.date) >= thirtyDaysAgo
   );
-  
-  localStorage.setItem(STORAGE_KEYS.POINTS_HISTORY, JSON.stringify(filteredHistory));
-  
-  // Update achievements for the category
-  const { updateAchievements } = require('./achievements');
-  updateAchievements(category);
-  
+
+  savePointsHistory(userId, filteredHistory);
   return filteredHistory;
-}
+};
 
-export function calculateCategoryPoints() {
-  const tasks = loadTasks();
-  const categories = loadCategories();
+// Calculate task points based on category and priority
+const calculateTaskPoints = (task) => {
+  const categories = loadCategories(task.userId);
+  const category = categories.find(c => c.id === task.categoryId);
   
-  return categories.map(category => {
-    const categoryTasks = tasks.filter(task => 
-      task.categoryId === category.id
-    );
-    const totalPoints = categoryTasks.reduce((sum, task) => sum + task.points, 0);
-    
-    return {
-      ...category,
-      totalPoints
-    };
-  });
-}
+  if (!category) return 0; // Default to 0 points if category is not found
 
-export function calculateStreak() {
-  const tasks = loadTasks();
+  // Calculate points based on priority
+  let points = category.basePoints;
+  switch (task.priority) {
+    case 'low':
+      points *= 1;
+      break;
+    case 'medium':
+      points *= 1.5;
+      break;
+    case 'high':
+      points *= 2;
+      break;
+    default:
+      points *= 1;
+  }
+
+  return Math.round(points); // Round to the nearest integer
+};
+
+// Calculate the user's streak
+const calculateStreak = (userId) => {
+  const tasks = loadTasks(userId);
   const today = new Date();
   let streak = 0;
   let currentDate = new Date(today);
@@ -189,10 +169,11 @@ export function calculateStreak() {
   }
 
   return streak;
-}
+};
 
-export function getMonthlyStats() {
-  const tasks = loadTasks();
+// Get monthly stats for the user
+const getMonthlyStats = (userId) => {
+  const tasks = loadTasks(userId);
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -206,12 +187,18 @@ export function getMonthlyStats() {
     totalTasks: monthTasks.length,
     totalPoints: monthTasks.reduce((sum, task) => sum + task.points, 0)
   };
-}
+};
 
-export const calculateTaskPoints = (task) => {
-  const categories = loadCategories();
-  const category = categories.find(c => c.id === task.categoryId);
-  
-  // Return base points directly without multipliers
-  return category ? category.basePoints : 1;
-}; 
+// Export all necessary functions
+module.exports = {
+  loadTasks,
+  saveTasks,
+  loadCategories,
+  saveCategories,
+  loadPointsHistory,
+  savePointsHistory,
+  addPointsToHistory,
+  calculateTaskPoints,
+  calculateStreak,
+  getMonthlyStats,
+};
